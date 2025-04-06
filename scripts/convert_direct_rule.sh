@@ -3,11 +3,11 @@
 mkdir -p rules
 
 # 下载 Shadowrocket 规则
-wget -O sr_reject_list.module "https://raw.githubusercontent.com/GMOogway/shadowrocket-rules/master/sr_reject_list.module"
+wget -O sr_direct_list.module "https://raw.githubusercontent.com/GMOogway/shadowrocket-rules/master/sr_direct_list.module"
 
 # 转换为 OpenClash YAML 格式
 echo "payload:" > rules/reject_list.yaml
-grep -v '^#' sr_reject_list.module | grep -v '^$' | sed 's/^/  - "/;s/$/"/' >> rules/reject_list.yaml
+grep -v '^#' sr_direct_list.module | grep -v '^$' | sed 's/^/  - "/;s/$/"/' >> rules/direct_list.yaml
 
 # 输出日志
-echo "转换完成！规则数量: $(grep -c '^  -' rules/reject_list.yaml)"
+echo "转换完成！规则数量: $(grep -c '^  -' rules/direct_list.yaml)"
