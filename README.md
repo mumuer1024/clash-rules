@@ -5,9 +5,11 @@
 
 # 鸣谢！
 > 感谢用户Aethersailor！我的openclash整个的设置是使用这个用户的“全网最详细的 OpenClash 设置方案”
+> 
 > https://github.com/Aethersailor/Custom_OpenClash_Rules/wiki
 
 > 感谢用户GMOogway！本项目的rules列表转换自这个用户的“🚀 shadowrocket-rules”
+> 
 > https://github.com/GMOogway/shadowrocket-rules
 
 ---
