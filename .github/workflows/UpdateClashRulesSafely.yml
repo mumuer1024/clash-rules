@@ -1,0 +1,46 @@
+name: Update Clash Rules Safely
+on:
+  schedule:
+    - cron: '0 */8 * * *'  # 每8小时自动运行一次
+  workflow_dispatch:        # 允许手动触发
+
+jobs:
+  convert-and-update:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. 检出仓库（完整历史）
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 检出全部提交历史
+
+      # 2. 创建rules目录（如果不存在）
+      - name: Create rules directory
+        run: mkdir -p rules
+
+      # 3. 转换直连规则
+      - name: Convert Direct Rules
+        run: |
+          chmod +x scripts/convert_direct_rule.sh
+          ./scripts/convert_direct_rule.sh
+          
+      # 4. 转换代理规则
+      - name: Convert Proxy Rules
+        run: |
+          chmod +x scripts/convert_proxy_rule.sh
+          ./scripts/convert_proxy_rule.sh
+          
+      # 5. 转换拦截规则
+      - name: Convert Reject Rules
+        run: |
+          chmod +x scripts/convert_reject_rule.sh
+          ./scripts/convert_reject_rule.sh
+
+      # 6. 安全推送规则（保留其他文件）
+      - name: Upload Rules
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./rules      # 只上传rules目录
+          publish_branch: main      # 推送到主分支
+          keep_files: true          # 关键！保留非rules目录的文件
+          force_orphan: false       # 禁止强制覆盖
