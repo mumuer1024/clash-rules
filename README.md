@@ -29,7 +29,7 @@
 * 代理（PROXY）规则：proxy_list.yaml
 * 屏蔽（REJECT）规则：reject_list.yaml
 
-这三个列表在仓库根目录可以自取
+这三个列表在仓库“rules”目录中可以自取
 
 ## 具体使用方法
 点击文件 → "Raw" 按钮，复制 URL
