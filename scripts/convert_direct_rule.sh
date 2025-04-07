@@ -6,7 +6,7 @@ mkdir -p rules
 wget -O sr_direct_list.module "https://raw.githubusercontent.com/GMOogway/shadowrocket-rules/master/sr_direct_list.module"
 
 # 转换为 OpenClash YAML 格式
-echo "payload:" > rules/reject_list.yaml
+echo "payload:" > rules/direct_list.yaml
 grep -v '^#' sr_direct_list.module | grep -v '^$' | sed 's/^/  - "/;s/$/"/' >> rules/direct_list.yaml
 
 # 输出日志
