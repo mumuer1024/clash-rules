@@ -1,0 +1,91 @@
+name: Clash Rules Auto-Update
+on:
+  schedule:
+    - cron: '0 */8 * * *'  # 每8小时自动运行（UTC时间）
+  workflow_dispatch:       # 允许手动触发
+
+jobs:
+  convert-and-update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      OUTPUT_DIR: "rules"  # 规则输出目录
+
+    steps:
+      # 1. 安全检出代码（保留仓库所有文件）
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 检出完整历史
+
+      # 2. 验证仓库结构
+      - name: Validate repository structure
+        run: |
+          [ -f "scripts/convert_direct_rule.sh" ] || exit 1
+          [ -f "scripts/convert_proxy_rule.sh" ] || exit 1
+          [ -f "scripts/convert_reject_rule.sh" ] || exit 1
+          echo "✅ 仓库结构验证通过"
+
+      # 3. 创建目标目录（安全模式）
+      - name: Prepare directories
+        run: |
+          mkdir -p ${{ env.OUTPUT_DIR }}
+          chmod 755 ${{ env.OUTPUT_DIR }}
+          echo "目录权限：$(ls -ld ${{ env.OUTPUT_DIR }})"
+
+      # 4. 执行转换脚本（带错误处理）
+      - name: Convert Direct Rules
+        run: |
+          chmod +x scripts/convert_direct_rule.sh
+          ./scripts/convert_direct_rule.sh || {
+            echo "❌ 直连规则转换失败";
+            exit 1;
+          }
+          echo "生成规则：$(wc -l < rules/direct_list.yaml) 行"
+
+      - name: Convert Proxy Rules
+        run: |
+          chmod +x scripts/convert_proxy_rule.sh
+          ./scripts/convert_proxy_rule.sh || {
+            echo "❌ 代理规则转换失败";
+            exit 1;
+          }
+          echo "生成规则：$(wc -l < rules/proxy_list.yaml) 行"
+
+      - name: Convert Reject Rules
+        run: |
+          chmod +x scripts/convert_reject_rule.sh
+          ./scripts/convert_reject_rule.sh || {
+            echo "❌ 拦截规则转换失败";
+            exit 1;
+          }
+          echo "生成规则：$(wc -l < rules/reject_list.yaml) 行"
+
+      # 5. 安全推送更新（不覆盖其他文件）
+      - name: Deploy Rules
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ${{ env.OUTPUT_DIR }}
+          publish_branch: main
+          keep_files: true          # 关键！保留非规则文件
+          force_orphan: false       # 禁止强制覆盖
+          commit_message: "chore: Auto-update rules [skip ci]"
+
+      # 6. 最终验证
+      - name: Verify Deployment
+        run: |
+          echo "=== 仓库当前状态 ==="
+          # 清理临时文件
+          rm -f sr_*_list.module || true
+          
+          # 重置脚本文件权限（避免因权限变更导致的误判）
+          git checkout -- scripts/*.sh 2>/dev/null || true
+          
+          # 严格验证：只允许 rules/ 目录变更
+          CHANGES=$(git status --porcelain)
+          if echo "$CHANGES" | grep -qv "^[MA] rules/"; then
+            echo "⚠️ 检测到非法变更："
+            echo "$CHANGES"
+            exit 1
+          fi
+          echo "✅ 仅规则文件变更，验证通过"
