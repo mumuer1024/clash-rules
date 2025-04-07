@@ -1,0 +1,39 @@
+name: Clash Rules Updater (Root Output)
+on:
+  schedule:
+    - cron: '0 */8 * * *'
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # 并行转换三种规则
+      - name: Convert Rules
+        run: |
+          chmod +x scripts/convert_*.sh
+          ./scripts/convert_direct_rule.sh direct
+          ./scripts/convert_proxy_rule.sh proxy
+          ./scripts/convert_reject_rule.sh reject
+
+      # 验证输出
+      - name: Verify Outputs
+        run: |
+          echo "=== 生成文件 ==="
+          ls -lh *_list.yaml
+          [ -f "direct_list.yaml" ] || exit 1
+          [ -f "proxy_list.yaml" ] || exit 1
+          [ -f "reject_list.yaml" ] || exit 1
+
+      # 安全提交（只提交规则文件）
+      - name: Commit Changes
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git add *_list.yaml
+          git diff-index --quiet HEAD || {
+            git commit -m "chore: Update rules [auto]"
+            git push
+          }
